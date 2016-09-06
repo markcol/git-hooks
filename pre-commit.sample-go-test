@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# git gofmt pre-commit hook
+#
+# To use, store as .git/hooks/pre-commit inside your repository and make sure
+# it has execute permissions.
+#
+# This script does not handle file names that contain spaces.
+
+# only check new files
+gofiles=$(git diff --cached --name-only --diff-filter=ACM | grep '.go$')
+if [ -n "$gofiles" ]; then
+  unformatted=$(gofmt -l $gofiles)
+  if [ -n "$unformated" ]; then
+    echo >&2 "Go files must be formatted with gofmt. Please run:"
+    for fn in $unformatted; do
+      echo >&2 "  gofmt -w $PWD/$fn"
+    done
+    exit 1
+  fi
+fi
+
+
+testfiles=$(ls *_test.go)
+[ -z "$testfiles" ] && exit 0
+go test > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+  echo "Tests failed. Please check the output of 'go test'."
+  exit 1
+fi
+echo "All tests passed."
